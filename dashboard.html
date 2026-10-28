@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Usage</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2; --surface-1: #ffffff; --surface-2: #f3f2ee; --surface-3: #eae8e3; --border: #e6e4de; --border-strong: #d6d3cb;
+  --text-primary: #141413; --text-secondary: #55534e; --text-muted: #8a8780;
+  --accent: #c96442; --accent-soft: rgba(201,100,66,.12); --grid: #efede8;
+  --shadow: 0 1px 2px rgba(20,20,19,.04), 0 1px 1px rgba(20,20,19,.03);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --seq-0: #f0efec; --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #6da7ec; --seq-4: #3987e5; --seq-5: #256abf; --seq-6: #184f95;
+  --good: #1a7f37; --warn: #a86400; --crit: #c62828;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f0f0e; --surface-1: #181817; --surface-2: #1f1f1d; --surface-3: #2a2a27; --border: #2a2a27; --border-strong: #3a3a36;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8c8b84;
+    --accent: #e07a55; --accent-soft: rgba(224,122,85,.16); --grid: #242422;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --seq-0: #242422; --seq-1: #104281; --seq-2: #184f95; --seq-3: #1c5cab; --seq-4: #256abf; --seq-5: #3987e5; --seq-6: #6da7ec;
+    --good: #4cc26a; --warn: #e5a23a; --crit: #ef6461;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f0f0e; --surface-1: #181817; --surface-2: #1f1f1d; --surface-3: #2a2a27; --border: #2a2a27; --border-strong: #3a3a36;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8c8b84;
+  --accent: #e07a55; --accent-soft: rgba(224,122,85,.16); --grid: #242422;
+  --shadow: 0 1px 2px rgba(0,0,0,.3);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --seq-0: #242422; --seq-1: #104281; --seq-2: #184f95; --seq-3: #1c5cab; --seq-4: #256abf; --seq-5: #3987e5; --seq-6: #6da7ec;
+  --good: #4cc26a; --warn: #e5a23a; --crit: #ef6461;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+.num, .tnum { font-variant-numeric: tabular-nums; }
+code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 20px 56px; }
+svg.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* top bar */
+.top { display: flex; align-items: center; gap: 12px; padding: 20px 0 16px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mark { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; color: #fff; flex: none; }
+.mark svg { width: 20px; height: 20px; }
+.brand h1 { font-size: 18px; line-height: 1.2; margin: 0; font-weight: 650; letter-spacing: -0.015em; }
+.brand p { margin: 0; font-size: 12px; color: var(--text-muted); }
+.top .actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); margin-right: 6px; white-space: nowrap; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 20%, transparent); }
+.live.off i { background: var(--text-muted); box-shadow: none; }
+.live.err i { background: var(--crit); box-shadow: 0 0 0 3px color-mix(in srgb, var(--crit) 20%, transparent); }
+
+/* controls */
+button, select, input { font: inherit; color: var(--text-primary); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: var(--shadow); transition: background .15s, border-color .15s; }
+.btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn.icon { width: 32px; padding: 0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.05); background: var(--accent); }
+.btn.ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-secondary); }
+.btn.ghost:hover { background: var(--surface-2); color: var(--text-primary); }
+.btn:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+select.sel { height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); padding: 0 28px 0 10px; font-size: 13px; appearance: none; cursor: pointer; box-shadow: var(--shadow); max-width: 220px; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8780' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
+input.field { height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); padding: 0 10px; font-size: 13px; }
+
+.toolbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); margin: 0 -20px; padding: 10px 20px; border-bottom: 1px solid transparent; transition: border-color .2s; }
+.toolbar.stuck { border-bottom-color: var(--border); }
+.toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-3); border-radius: 9px; }
+.seg button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+.seg button:hover { color: var(--text-primary); }
+.seg button.on { background: var(--surface-1); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.spacer { flex: 1; }
+.caption { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+.pop { position: relative; }
+.pop-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 12px; min-width: 240px; display: none; }
+.pop.open .pop-panel { display: block; }
+.pop-panel.right { left: auto; right: 0; }
+.pop-panel h4 { margin: 0 0 8px; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.pop-row { display: flex; gap: 6px; align-items: center; }
+.check { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.check:hover { background: var(--surface-2); }
+.check input { margin: 3px 0 0; accent-color: var(--accent); }
+.check b { display: block; font-weight: 500; font-size: 13px; }
+.check span { display: block; font-size: 12px; color: var(--text-muted); }
+.badge[hidden] { display: none; }
+.badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; }
+
+/* sections & cards */
+.section { margin-top: 24px; }
+.section > .sh { display: flex; align-items: baseline; gap: 10px; margin: 0 2px 10px; }
+.section > .sh h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+.section > .sh .hint { font-size: 12px; color: var(--text-muted); }
+.grid { display: grid; gap: 12px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; min-width: 0; box-shadow: var(--shadow); }
+.card-h { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; min-height: 26px; }
+.card-h h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.card-h .sub { font-size: 12px; color: var(--text-muted); }
+.card-h .right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-2); color: var(--text-secondary); flex: none; }
+
+.limits { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.big { font-size: 30px; font-weight: 650; letter-spacing: -0.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.big small { font-size: 14px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; margin-left: 6px; }
+.meter { height: 8px; background: var(--surface-3); border-radius: 99px; overflow: hidden; margin: 12px 0 8px; }
+.meter > div { height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.2,.8,.2,1); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+.row + .row { margin-top: 4px; }
+.row b { color: var(--text-primary); font-weight: 600; }
+.status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.status svg { width: 13px; height: 13px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+.budget-edit { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+.budget-edit input { width: 130px; height: 28px; }
+.budget-edit .btn { height: 28px; }
+.foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.plan-row { padding: 10px 0; }
+.plan-row + .plan-row { border-top: 1px solid var(--grid); }
+.plan-row .meter { margin: 8px 0 6px; }
+.cta { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; color: var(--text-secondary); font-size: 13px; }
+.notice { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--text-primary); font-size: 13px; }
+.notice svg { color: var(--warn); margin-top: 2px; }
+
+.overview { grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); }
+.hero { grid-row: span 2; display: flex; flex-direction: column; }
+.hero .big { font-size: 40px; }
+.hero .spark { margin-top: auto; padding-top: 12px; }
+.kpi .label { font-size: 12px; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.kpi .value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+.kpi .sub { font-size: 12px; color: var(--text-secondary); }
+.delta { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.delta.up { color: var(--s1); }
+.delta.down { color: var(--text-secondary); }
+
+.trends { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.halves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+svg text { fill: var(--text-muted); font-size: 11px; font-family: inherit; }
+.legend { display: flex; gap: 6px 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-top: 10px; }
+.legend i, .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; flex: none; }
+.share-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.share-list li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center; padding: 7px 0; font-size: 13px; border-top: 1px solid var(--grid); }
+.share-list li span.m { color: var(--text-muted); font-size: 12px; }
+.chart { position: relative; }
+.chart .hl { pointer-events: none; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; color: var(--text-muted); font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; position: sticky; top: 0; background: var(--surface-1); }
+th:hover { color: var(--text-primary); }
+th .arr { color: var(--accent); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+td.name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+tbody tr:hover td { background: var(--surface-2); }
+.bar { display: inline-block; width: 56px; height: 6px; border-radius: 3px; background: var(--surface-3); margin-right: 8px; vertical-align: middle; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 3px; background: var(--s1); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-secondary); }
+.scroll { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+.muted { color: var(--text-muted); }
+.empty { padding: 36px 12px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.more { display: flex; justify-content: center; margin-top: 10px; }
+
+.heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+.heat-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+#tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2); z-index: 50; display: none; min-width: 180px; }
+#tip .t { font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
+#tip .r { display: flex; justify-content: space-between; gap: 16px; color: var(--text-secondary); line-height: 1.7; }
+#tip .r b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+#tip .r.total { border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 4px; }
+
+.banner { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--crit) 40%, var(--border)); background: color-mix(in srgb, var(--crit) 8%, var(--surface-1)); font-size: 13px; align-items: center; gap: 10px; }
+.banner.show { display: flex; }
+.banner svg { color: var(--crit); }
+
+.skel { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 8px; color: transparent !important; }
+.skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface-1) 60%, transparent), transparent); animation: sh 1.2s infinite; }
+@keyframes sh { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+details.about { margin-top: 24px; color: var(--text-secondary); font-size: 13px; }
+details.about summary { cursor: pointer; color: var(--text-muted); font-size: 12px; list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+details.about summary::-webkit-details-marker { display: none; }
+details.about ul { margin: 10px 0 0; padding-left: 18px; max-width: 860px; }
+details.about li { margin-bottom: 6px; }
+
+@media (max-width: 1100px) {
+  .overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hero { grid-column: 1 / -1; grid-row: auto; }
+}
+@media (max-width: 900px) {
+  .limits, .trends, .halves { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px 40px; }
+  .toolbar { margin: 0 -16px; padding: 8px 16px; }
+  .toolbar-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .toolbar-row::-webkit-scrollbar { display: none; }
+  .overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero .big { font-size: 32px; }
+  .live span { display: none; }
+  .brand p { display: none; }
+  .hide-sm { display: none; }
+  .card-h .sub { display: none; }
+  .scroll { margin: 0 -18px; }
+  .pop-panel { position: fixed; left: 16px !important; right: 16px !important; top: 60px; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <div class="mark"><svg class="i" style="stroke:#fff;stroke-width:2.2"><use href="#i-spark"/></svg></div>
+      <div><h1>Claude Usage</h1><p>Claude Code · from your local transcripts</p></div>
+    </div>
+    <div class="actions">
+      <span class="live off" id="live"><i></i><span id="updated">Loading…</span></span>
+      <button class="btn icon" id="refreshBtn" title="Refresh now" aria-label="Refresh now"><svg class="i"><use href="#i-refresh"/></svg></button>
+      <button class="btn icon" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"><svg class="i"><use href="#i-moon"/></svg></button>
+    </div>
+  </div>
+
+  <div class="toolbar" id="toolbar">
+    <div class="toolbar-row">
+      <div class="seg" id="presets" role="tablist" aria-label="Time range">
+        <button data-r="1h">1h</button><button data-r="5h">5h</button><button data-r="24h">24h</button><button data-r="7d">7d</button><button data-r="30d">30d</button><button data-r="90d">90d</button><button data-r="all">All</button>
+      </div>
+      <div class="pop" id="customPop">
+        <button class="btn" id="customBtn"><svg class="i"><use href="#i-cal"/></svg><span id="customLabel">Custom</span><svg class="i" style="width:12px"><use href="#i-chev"/></svg></button>
+        <div class="pop-panel">
+          <h4>Last…</h4>
+          <div class="pop-row">
+            <input class="field" type="number" id="customN" min="1" value="3" style="width:70px" aria-label="Amount">
+            <select class="sel" id="customU" aria-label="Unit"><option value="h">hours</option><option value="d" selected>days</option><option value="w">weeks</option><option value="mo">months</option></select>
+            <button class="btn primary" id="customGo">Apply</button>
+          </div>
+        </div>
+      </div>
+      <select class="sel" id="projSel" aria-label="Project"><option value="">All projects</option></select>
+      <select class="sel" id="modelSel" aria-label="Model"><option value="">All models</option></select>
+      <div class="spacer"></div>
+      <div class="pop" id="viewPop">
+        <button class="btn" id="viewBtn"><svg class="i"><use href="#i-sliders"/></svg>Display<span class="badge" id="viewBadge" hidden></span></button>
+        <div class="pop-panel right" style="width:300px">
+          <h4>Include</h4>
+          <label class="check"><input type="checkbox" id="subToggle" checked><div><b>Subagents</b><span>Work done by agents your sessions spawned</span></div></label>
+          <label class="check"><input type="checkbox" id="crToggle" checked><div><b>Cache reads</b><span>Cheap, but usually most of the raw token count</span></div></label>
+          <label class="check"><input type="checkbox" id="bgToggle" checked><div><b>Background usage</b><span>Titles, summaries etc. from Claude Code's cost records, not in transcripts</span></div></label>
+          <h4 style="margin-top:8px">Refresh</h4>
+          <label class="check"><input type="checkbox" id="autoRefresh" checked><div><b>Auto-refresh</b><span>Reload data every 30 seconds</span></div></label>
+        </div>
+      </div>
+    </div>
+    <div class="caption" id="caption">&nbsp;</div>
+  </div>
+
+  <div class="banner" id="banner"><svg class="i"><use href="#i-alert"/></svg><div id="bannerText"></div></div>
+
+  <section class="section">
+    <div class="sh"><h2>Limits</h2><span class="hint">always across all projects, models and subagents</span></div>
+    <div class="grid limits">
+      <div class="card" id="sessionCard"><div class="skel" style="height:120px"></div></div>
+      <div class="card" id="weekCard"><div class="skel" style="height:120px"></div></div>
+      <div class="card" id="liveCard"><div class="skel" style="height:120px"></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sh"><h2>Overview</h2><span class="hint" id="ovHint"></span></div>
+    <div class="grid overview" id="kpis">
+      <div class="card hero"><div class="skel" style="height:180px"></div></div>
+      <div class="card"><div class="skel" style="height:70px"></div></div><div class="card"><div class="skel" style="height:70px"></div></div><div class="card"><div class="skel" style="height:70px"></div></div>
+      <div class="card"><div class="skel" style="height:70px"></div></div><div class="card"><div class="skel" style="height:70px"></div></div><div class="card"><div class="skel" style="height:70px"></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sh"><h2>Trends</h2></div>
+    <div class="grid trends">
+      <div class="card">
+        <div class="card-h"><h3>Usage over time</h3><span class="sub" id="tsSub"></span>
+          <div class="right"><div class="seg" id="tsMode"><button data-m="type" class="on">Type</button><button data-m="model">Model</button><button data-m="cost">Cost</button></div></div>
+        </div>
+        <div class="chart" id="tsChart"></div>
+        <div class="legend" id="tsLegend"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Model share</h3><span class="sub">of tokens</span></div>
+        <div id="donut"></div>
+        <ul class="share-list" id="donutLegend"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sh"><h2>Breakdown</h2></div>
+    <div class="grid halves">
+      <div class="card"><div class="card-h"><h3>By model</h3></div><div class="scroll" id="modelTable"></div></div>
+      <div class="card"><div class="card-h"><h3>By project</h3></div><div class="scroll" id="projTable"></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sh"><h2>Activity</h2></div>
+    <div class="grid halves">
+      <div class="card"><div class="card-h"><h3>When you use Claude</h3><span class="sub">API calls by weekday and hour</span></div><div id="heat"></div>
+        <div class="heat-legend">Less <i style="background:var(--seq-1)"></i><i style="background:var(--seq-2)"></i><i style="background:var(--seq-3)"></i><i style="background:var(--seq-4)"></i><i style="background:var(--seq-5)"></i><i style="background:var(--seq-6)"></i> More</div></div>
+      <div class="card"><div class="card-h"><h3>5-hour windows</h3><span class="sub">last 20 · all usage</span></div><div id="blocksChart"></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <div class="card-h"><h3>Sessions</h3><span class="sub" id="sessCount"></span></div>
+      <div class="scroll" id="sessTable"></div>
+      <div class="more" id="sessMore"></div>
+    </div>
+  </section>
+
+  <details class="about">
+    <summary><svg class="i"><use href="#i-info"/></svg>About these numbers</summary>
+    <ul>
+      <li>Data comes from Claude Code transcripts in <code>~/.claude/projects</code>: the CLI, the desktop app's Code tab and IDE extensions, including subagents. Duplicate log lines for the same API response are merged. Chats on claude.ai and in the desktop chat tab aren't stored locally and aren't included.</li>
+      <li><b>API $</b> uses public per-token API prices (cache writes 1.25×/2× input, cache reads discounted). On a Pro/Max/Team plan you don't pay this; it shows the value of what you used.</li>
+      <li><b>Background</b> is usage Claude Code counted in its own per-session cost records but never wrote to a transcript (titles, summaries, background Haiku calls): the record's totals minus what the transcript logged up to that point. It has no exact timestamps, so it is placed at the record's time, priced with 5-minute cache writes, and not counted as API calls.</li>
+      <li>The <b>5-hour window</b> is estimated locally: it opens at your first message, floored to the UTC hour, and lasts five hours. The exact plan % and reset times only come from <b>Fetch live limits</b>, which uses your Claude Code login.</li>
+      <li><b>vs previous</b> compares the selected range with the same length of time just before it. Budgets you set are stored in this browser only.</li>
+    </ul>
+  </details>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const store = { get(k, d) { try { const v = localStorage.getItem('cu.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+                set(k, v) { try { localStorage.setItem('cu.' + k, JSON.stringify(v)); } catch {} } };
+const fmt = n => { const a = Math.abs(n); return a >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : a >= 1e6 ? (n / 1e6).toFixed(a >= 1e8 ? 0 : a >= 1e7 ? 1 : 2) + 'M' : a >= 1e3 ? (n / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'K' : String(Math.round(n)); };
+const usd = n => n >= 1000 ? '$' + Math.round(n).toLocaleString() : n >= 100 ? '$' + n.toFixed(0) : '$' + n.toFixed(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const dur = ms => { const m = Math.max(0, Math.round(ms / 60e3)); return m >= 1440 ? `${Math.floor(m / 1440)}d ${Math.floor(m % 1440 / 60)}h` : m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
+const icon = (id, style = '') => `<svg class="i" style="${style}"><use href="#i-${id}"/></svg>`;
+const UNIT = { h: 3600e3, d: 864e5, w: 7 * 864e5, mo: 30 * 864e5 };
+const UNIT_NAME = { h: 'hour', d: 'day', w: 'week', mo: 'month' };
+const TYPES = [
+  { k: 'in', label: 'Input', v: r => r.bg ? 0 : r.in, c: '--s1' },
+  { k: 'out', label: 'Output', v: r => r.bg ? 0 : r.out, c: '--s2' },
+  { k: 'cw', label: 'Cache write', v: r => r.bg ? 0 : r.cw5 + r.cw1h, c: '--s3' },
+  { k: 'cr', label: 'Cache read', v: r => r.bg ? 0 : r.cr, c: '--s4' },
+  { k: 'bg', label: 'Background', v: r => r.bg ? tot(r) : 0, c: '--s5' },
+];
+
+const state = {
+  range: store.get('range', '7d'), project: '', model: '', sub: store.get('sub', true), cr: store.get('cr', true), bg: store.get('bg', true),
+  tsMode: store.get('tsMode', 'type'), data: null, live: null, sort: {}, sessAll: false, editing: null,
+  budget5h: store.get('budget5h', 0), budgetWeek: store.get('budgetWeek', 0),
+};
+let modelColor = {};
+
+function tot(r) { return r.in + r.out + r.cw5 + r.cw1h + (state.cr ? r.cr : 0); }
+function rangeLen() {
+  if (state.range === 'all') return null;
+  const m = /^(\d+(?:\.\d+)?)(h|d|w|mo)$/.exec(state.range);
+  return parseFloat(m[1]) * UNIT[m[2]];
+}
+function rangeStart() { const l = rangeLen(); return l == null ? 0 : state.data.now - l; }
+function rangeLabel() {
+  if (state.range === 'all') return 'all time';
+  const m = /^(\d+(?:\.\d+)?)(h|d|w|mo)$/.exec(state.range); const n = +m[1];
+  return `last ${n === 1 ? '' : n + ' '}${UNIT_NAME[m[2]]}${n === 1 ? '' : 's'}`;
+}
+function matches(r) { return (!state.project || r.project === state.project) && (!state.model || r.model === state.model) && (state.sub || !r.sub) && (state.bg || !r.bg); }
+function filtered(t0 = rangeStart(), t1 = Infinity) { return state.data.records.filter(r => r.t >= t0 && r.t < t1 && matches(r)); }
+function shortModel(m) { return m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-(\d+)$/, ' $1').replace(/^./, c => c.toUpperCase()); }
+function sum(recs) {
+  return recs.reduce((a, r) => { a.in += r.in; a.out += r.out; a.cw += r.cw5 + r.cw1h; a.cr += r.cr; a.cost += r.cost; a.think += r.think; a.web += r.web; a.tot += tot(r); if (r.bg) a.bg += tot(r); else a.calls++; return a; },
+    { in: 0, out: 0, cw: 0, cr: 0, cost: 0, think: 0, web: 0, tot: 0, bg: 0, calls: 0 });
+}
+function tickCount(max) { const f = max / Math.pow(10, Math.floor(Math.log10(max))); return f === 2.5 || f === 5 || f === 10 ? 5 : 4; }
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
+
+// ---------- tooltip ----------
+const tip = $('#tip');
+function showTip(e, title, rows, total) {
+  tip.innerHTML = `<div class="t">${esc(title)}</div>` + rows.map(([k, v, c]) => `<div class="r"><span>${c ? `<i class="sw" style="background:${c}"></i>` : ''}${esc(k)}</span><b>${esc(v)}</b></div>`).join('') +
+    (total ? `<div class="r total"><span>${esc(total[0])}</span><b>${esc(total[1])}</b></div>` : '');
+  tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+
+// ---------- render ----------
+function render() {
+  if (!state.data) return;
+  const recs = filtered();
+  $$('#presets button').forEach(b => b.classList.toggle('on', b.dataset.r === state.range));
+  const isPreset = $$('#presets button').some(b => b.dataset.r === state.range);
+  $('#customLabel').textContent = isPreset ? 'Custom' : rangeLabel().replace(/^last /, 'Last ');
+  $('#customBtn').classList.toggle('primary', !isPreset);
+  const off = [!state.sub, !state.cr, !state.bg].filter(Boolean).length;
+  $('#viewBadge').hidden = !off; $('#viewBadge').textContent = off;
+  renderCaption(recs);
+  renderLimits();
+  renderKpis(recs);
+  renderTimeseries(recs);
+  renderDonut(recs);
+  renderGroupTable('#modelTable', recs, r => r.model, k => `<i class="sw" style="background:var(${modelColor[k] || '--s8'})"></i>${esc(shortModel(k))}`, 'model');
+  renderGroupTable('#projTable', recs, r => r.project, k => esc(k), 'project');
+  renderHeat(recs);
+  renderBlocks();
+  renderSessions(recs);
+}
+
+function renderCaption(recs) {
+  const t0 = Math.max(rangeStart(), state.data.records[0]?.t || 0);
+  const d = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: rangeLen() && rangeLen() <= 2 * 864e5 ? '2-digit' : undefined, minute: rangeLen() && rangeLen() <= 2 * 864e5 ? '2-digit' : undefined });
+  const parts = [`${d(t0)} – now`, `${new Set(recs.map(r => r.session)).size} sessions`];
+  if (state.project) parts.push(esc(state.project));
+  if (state.model) parts.push(esc(shortModel(state.model)));
+  const ex = [!state.sub && 'subagents', !state.cr && 'cache reads', !state.bg && 'background'].filter(Boolean);
+  if (ex.length) parts.push('excluding ' + ex.join(', '));
+  $('#caption').innerHTML = `Showing <b style="color:var(--text-secondary);font-weight:600">${rangeLabel()}</b> · ` + parts.join(' · ');
+}
+
+function delta(cur, prev) {
+  if (state.range === 'all' || prev == null) return '';
+  if (!prev) return cur ? `<span class="delta up" title="Nothing in the previous period">new</span>` : '';
+  const d = (cur - prev) / prev;
+  if (Math.abs(d) < 0.005) return `<span class="delta" title="vs previous period">±0%</span>`;
+  return `<span class="delta ${d > 0 ? 'up' : 'down'}" title="vs previous ${rangeLabel().replace('last ', '')}">${d > 0 ? '↑' : '↓'} ${Math.abs(d * 100) >= 1000 ? '>999' : Math.abs(d * 100).toFixed(0)}%</span>`;
+}
+function kpi(label, value, sub, dl) {
+  return `<div class="card kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub || '&nbsp;'} ${dl || ''}</div></div>`;
+}
+function renderKpis(recs) {
+  const s = sum(recs);
+  const len = rangeLen();
+  const p = len ? sum(filtered(rangeStart() - len, rangeStart())) : null;
+  const hasPrev = p && state.data.records.some(r => r.t < rangeStart());
+  const P = k => hasPrev ? p[k] : null;
+  const sessions = new Set(recs.map(r => r.session)).size;
+  const prevSessions = hasPrev ? new Set(filtered(rangeStart() - len, rangeStart()).map(r => r.session)).size : null;
+  const hit = (s.in + s.cw + s.cr) ? s.cr / (s.in + s.cw + s.cr) : 0;
+  const span = recs.length ? Math.max(1, (state.data.now - Math.max(rangeStart(), recs[0].t)) / 864e5) : 1;
+  $('#ovHint').textContent = state.range === 'all' ? '' : 'changes vs the previous ' + rangeLabel().replace('last ', '');
+  const hero = `<div class="card hero kpi">
+      <div class="label">Total tokens</div>
+      <div class="big" style="margin-top:6px">${fmt(s.tot)}</div>
+      <div class="sub" style="margin-top:6px">${delta(s.tot, P('tot'))} <span class="muted">${state.cr ? 'incl.' : 'excl.'} cache reads${s.bg ? ` · ${fmt(s.bg)} background` : ''}</span></div>
+      <div class="row" style="margin-top:14px;justify-content:flex-start;gap:18px">
+        <span>≈ <b>${fmt(s.tot / span)}</b> per day</span><span><b>${usd(s.cost)}</b> API value</span>
+      </div>
+      <div class="spark" id="spark"></div>
+    </div>`;
+  $('#kpis').innerHTML = hero +
+    kpi('Output tokens', fmt(s.out), s.think ? `${fmt(s.think)} thinking` : '', delta(s.out, P('out'))) +
+    kpi('Input + cache write', fmt(s.in + s.cw), `${fmt(s.in)} uncached input`, delta(s.in + s.cw, hasPrev ? p.in + p.cw : null)) +
+    kpi('Cache read', fmt(s.cr), `${(hit * 100).toFixed(1)}% hit rate`, delta(s.cr, P('cr'))) +
+    kpi('API-equivalent cost', usd(s.cost), `${usd(s.cost / span)} / day`, delta(s.cost, P('cost'))) +
+    kpi('API calls', s.calls.toLocaleString(), s.web ? `${s.web} web searches` : 'requests to Claude', delta(s.calls, P('calls'))) +
+    kpi('Sessions', sessions, sessions ? `${fmt(s.tot / sessions)} tokens each` : '', delta(sessions, prevSessions));
+  renderSpark(recs);
+}
+
+function renderSpark(recs) {
+  const el = $('#spark'); if (!el || !recs.length) return;
+  const { buckets, totals, bk } = bucketize(recs, [{ key: 't', v: tot }]);
+  const W = el.clientWidth || 300, H = 56, max = Math.max(...totals) || 1;
+  const x = i => buckets.length === 1 ? W / 2 : i / (buckets.length - 1) * W, y = v => H - 2 - v / max * (H - 6);
+  const pts = totals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  el.innerHTML = `<svg width="${W}" height="${H}" aria-hidden="true"><defs><linearGradient id="sg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".25"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="0,${H} ${pts} ${W},${H}" fill="url(#sg)"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/></svg>
+    <div class="row muted" style="font-size:11px"><span>${esc(bk.label(buckets[0].t))}</span><span>per ${bk.name}</span><span>now</span></div>`;
+}
+
+function meterColor(p) { return p >= 0.9 ? 'var(--crit)' : p >= 0.7 ? 'var(--warn)' : 'var(--s1)'; }
+function statusLabel(p) {
+  return p >= 1 ? `<span class="status" style="color:var(--crit)">${icon('alert')}Over budget</span>`
+    : p >= 0.9 ? `<span class="status" style="color:var(--crit)">${icon('alert')}Near limit</span>`
+    : p >= 0.7 ? `<span class="status" style="color:var(--warn)">${icon('alert')}Getting close</span>`
+    : `<span class="status" style="color:var(--good)">${icon('check')}On track</span>`;
+}
+function budgetBlock(key, value, used, step) {
+  if (state.editing === key) return `<div class="budget-edit"><input class="field" id="bIn" type="number" min="0" step="${step}" value="${value || ''}" placeholder="tokens"><button class="btn primary" id="bSave">Save</button>${value ? `<button class="btn ghost" id="bClear">Remove</button>` : ''}<button class="btn ghost" id="bCancel">Cancel</button></div>`;
+  if (!value) return `<div class="foot"><button class="linkbtn" data-edit="${key}">${icon('plus', 'width:12px;height:12px;vertical-align:-2px')} Set a budget to track progress</button></div>`;
+  const p = used / value;
+  return `<div class="meter"><div style="width:${Math.min(100, p * 100)}%;background:${meterColor(p)}"></div></div>
+    <div class="row"><span><b>${(p * 100).toFixed(0)}%</b> of ${fmt(value)} budget · <button class="linkbtn" data-edit="${key}">edit</button></span>${statusLabel(p)}</div>`;
+}
+
+function renderLimits() {
+  const { now, records, blocks } = state.data;
+  const sumTok = rs => rs.reduce((a, r) => a + tot(r), 0);
+  const b = blocks.at(-1);
+  const active = b && now < b.end;
+  let html = `<div class="card-h"><div class="ico">${icon('clock')}</div><h3>Current 5-hour window</h3><span class="right sub">estimate</span></div>`;
+  if (active) {
+    const inBlock = records.filter(r => r.t >= b.start && r.t < b.end);
+    const tok = sumTok(inBlock), cost = inBlock.reduce((a, r) => a + r.cost, 0);
+    const rate = tok / (Math.max(60e3, now - b.first) / 60e3);
+    html += `<div class="big">${fmt(tok)}<small>tokens · ${usd(cost)}</small></div>
+      ${budgetBlock('5h', state.budget5h, tok, 100000)}
+      <div class="row" style="margin-top:10px"><span>Resets in <b>${dur(b.end - now)}</b> · ${new Date(b.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>${fmt(rate)}/min</span></div>
+      <div class="row"><span>Started ${new Date(b.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>~${fmt(tok + rate * ((b.end - now) / 60e3))} by reset at this pace</span></div>`;
+  } else {
+    html += `<div class="big muted">Idle</div><div class="row" style="margin-top:8px"><span>No active window. A new one starts with your next message.</span></div>${budgetBlock('5h', state.budget5h, 0, 100000).replace(/<div class="meter">[\s\S]*$/, '')}`;
+  }
+  $('#sessionCard').innerHTML = html;
+
+  const wk = records.filter(r => r.t >= now - 7 * 864e5);
+  const wtok = sumTok(wk), wcost = wk.reduce((a, r) => a + r.cost, 0);
+  const prev = records.filter(r => r.t >= now - 14 * 864e5 && r.t < now - 7 * 864e5);
+  const ptok = sumTok(prev), d = ptok ? (wtok - ptok) / ptok : null;
+  $('#weekCard').innerHTML = `<div class="card-h"><div class="ico">${icon('cal')}</div><h3>Last 7 days</h3><span class="right sub">rolling</span></div>
+    <div class="big">${fmt(wtok)}<small>tokens · ${usd(wcost)}</small></div>
+    ${budgetBlock('week', state.budgetWeek, wtok, 1000000)}
+    <div class="row" style="margin-top:10px"><span>${d == null ? 'No usage in the 7 days before' : `<b>${d >= 0 ? '↑' : '↓'} ${Math.abs(d * 100).toFixed(0)}%</b> vs the 7 days before`}</span><span>${fmt(wtok / 7)}/day</span></div>
+    <div class="row"><span>${wk.filter(r => !r.bg).length} calls · ${new Set(wk.map(r => r.session)).size} sessions</span></div>`;
+
+  const L = state.live;
+  let lh = `<div class="card-h"><div class="ico">${icon('gauge')}</div><h3>Plan limits</h3><span class="right">${L ? `<button class="btn ghost icon" id="liveBtn" title="Refresh live limits">${icon('refresh')}</button>` : ''}</span></div>`;
+  if (!L) lh += `<div class="cta"><span>Your real 5-hour and weekly usage % from Anthropic, the same numbers <code>/usage</code> shows. Uses your Claude Code login; macOS may ask to allow keychain access.</span><button class="btn primary" id="liveBtn">${icon('gauge')}Fetch live limits</button></div>`;
+  else if (!L.ok) lh += `<div class="notice">${icon('alert')}<div>${esc(L.error)}</div></div><div style="margin-top:12px"><button class="btn" id="liveBtn2">${icon('refresh')}Try again</button></div>`;
+  else {
+    const NAMES = { five_hour: 'Current session', seven_day: 'Weekly · all models', seven_day_opus: 'Weekly · Opus', seven_day_sonnet: 'Weekly · Sonnet', seven_day_oauth_apps: 'Weekly · apps' };
+    const rows = Object.entries(L.data).filter(([, v]) => v && typeof v === 'object' && 'utilization' in v);
+    lh += rows.map(([k, v]) => { const p = (v.utilization || 0) / 100; return `<div class="plan-row"><div class="row"><b>${esc(NAMES[k] || k)}</b><b>${Math.round(v.utilization)}%</b></div>
+      <div class="meter"><div style="width:${Math.min(100, p * 100)}%;background:${meterColor(p)}"></div></div>
+      <div class="row"><span>${v.resets_at ? 'Resets in ' + dur(Date.parse(v.resets_at) - Date.now()) + ' · ' + new Date(v.resets_at).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>${statusLabel(p)}</div></div>`; }).join('') || '<div class="muted">No limit data returned.</div>';
+    const extra = L.data.extra_usage;
+    if (extra && extra.is_enabled) lh += `<div class="row foot"><span>Extra usage</span><b>${usd((extra.used_credits || 0) / 100)} of ${usd((extra.monthly_limit || 0) / 100)}</b></div>`;
+    lh += `<div class="row muted" style="margin-top:6px"><span>Fetched ${new Date(L.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+  }
+  $('#liveCard').innerHTML = lh;
+  ['#liveBtn', '#liveBtn2'].forEach(s => { const b = $(s); if (b) b.onclick = fetchLive; });
+
+  $$('[data-edit]').forEach(b => b.onclick = () => { state.editing = b.dataset.edit; renderLimits(); $('#bIn')?.focus(); });
+  const save = v => { if (state.editing === '5h') { state.budget5h = v; store.set('budget5h', v); } else { state.budgetWeek = v; store.set('budgetWeek', v); } state.editing = null; render(); };
+  if ($('#bSave')) {
+    $('#bSave').onclick = () => save(+$('#bIn').value || 0);
+    $('#bIn').onkeydown = e => { if (e.key === 'Enter') save(+e.target.value || 0); if (e.key === 'Escape') { state.editing = null; renderLimits(); } };
+    $('#bCancel').onclick = () => { state.editing = null; renderLimits(); };
+    if ($('#bClear')) $('#bClear').onclick = () => save(0);
+  }
+}
+
+// ---------- time buckets ----------
+function bucketFor(t0, t1) {
+  const span = t1 - t0;
+  const time = { hour: '2-digit', minute: '2-digit' };
+  if (span <= 6 * 3600e3) return { ms: 15 * 60e3, name: '15 min', label: t => new Date(t).toLocaleTimeString([], time) };
+  if (span <= 3 * 864e5) return { ms: 3600e3, name: 'hour', label: t => new Date(t).toLocaleDateString([], { weekday: 'short' }) + ' ' + new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+  if (span <= 120 * 864e5) return { ms: 864e5, name: 'day', label: t => new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' }) };
+  return { ms: 7 * 864e5, name: 'week', label: t => 'Wk of ' + new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' }) };
+}
+function floorTo(t, ms) {
+  const d = new Date(t);
+  if (ms >= 864e5) { d.setHours(0, 0, 0, 0); if (ms > 864e5) d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return +d; }
+  if (ms === 3600e3) { d.setMinutes(0, 0, 0); return +d; } // local hour, not UTC (e.g. IST is +5:30)
+  return Math.floor(t / ms) * ms;
+}
+// Chart domain: the selected range, but never before the first record in the logs (there is no data before it).
+function domain() {
+  const t1 = state.data.now;
+  const first = state.data.records[0]?.t ?? t1;
+  return [Math.max(rangeStart(), floorTo(first, 3600e3)), t1];
+}
+function bucketize(recs, series) {
+  const [t0, t1] = domain();
+  const bk = bucketFor(t0, t1);
+  const buckets = [];
+  for (let t = floorTo(t0, bk.ms); t <= t1; t = bk.ms >= 864e5 ? floorTo(t + bk.ms + 3600e3 * 3, bk.ms) : bk.ms === 3600e3 ? floorTo(t + bk.ms, bk.ms) : t + bk.ms) buckets.push({ t, v: {} });
+  const idx = t => { let lo = 0, hi = buckets.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (buckets[m].t <= t) lo = m; else hi = m - 1; } return lo; };
+  for (const r of recs) { const b = buckets[idx(r.t)]; for (const s of series) b.v[s.key] = (b.v[s.key] || 0) + s.v(r); }
+  const totals = buckets.map(b => series.reduce((a, s) => a + (b.v[s.key] || 0), 0));
+  return { buckets, totals, bk };
+}
+
+function roundedTop(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h);
+  if (r <= 0) return `M${x},${y + h}V${y}H${x + w}V${y + h}Z`;
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+
+function renderTimeseries(recs) {
+  const el = $('#tsChart');
+  $$('#tsMode button').forEach(x => x.classList.toggle('on', x.dataset.m === state.tsMode));
+  if (!recs.length) { el.innerHTML = '<div class="empty">No usage in this range.</div>'; $('#tsLegend').innerHTML = ''; $('#tsSub').textContent = ''; return; }
+  let series;
+  if (state.tsMode === 'type') series = TYPES.filter(s => (state.cr || s.k !== 'cr') && (state.bg || s.k !== 'bg')).map(s => ({ key: s.k, label: s.label, c: s.c, v: s.v }));
+  else if (state.tsMode === 'cost') series = modelsIn(recs).map(m => ({ key: m, label: shortModel(m), c: modelColor[m], v: r => r.model === m ? r.cost : 0 }));
+  else series = modelsIn(recs).map(m => ({ key: m, label: shortModel(m), c: modelColor[m], v: r => r.model === m ? tot(r) : 0 }));
+  const { buckets, totals, bk } = bucketize(recs, series);
+  series = series.filter(s => buckets.some(b => b.v[s.key] > 0));
+  $('#tsSub').textContent = `per ${bk.name}`;
+  const max = niceMax(Math.max(...totals));
+  const W = Math.max(300, el.clientWidth || 700), H = 260, P = { l: 52, r: 4, t: 10, b: 28 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const bw = iw / buckets.length, gap = bw > 8 ? Math.min(bw * 0.28, 10) : bw > 3 ? 1 : 0;
+  const y = v => P.t + ih - (v / max) * ih;
+  const fmtV = state.tsMode === 'cost' ? usd : fmt;
+  let svg = `<svg width="${W}" height="${H}" role="img" aria-label="Usage over time">`;
+  const nt = tickCount(max);
+  for (let i = 0; i <= nt; i++) { const v = max * i / nt, yy = y(v); svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}" stroke="var(--grid)" ${i ? '' : 'stroke="var(--border)"'}/><text x="${P.l - 8}" y="${yy + 4}" text-anchor="end">${fmtV(v)}</text>`; }
+  const labelEvery = Math.ceil(buckets.length / Math.max(2, Math.floor(iw / 84)));
+  buckets.forEach((b, i) => {
+    const x0 = P.l + i * bw + gap / 2, w = Math.max(1, bw - gap);
+    let acc = 0;
+    const segs = series.filter(s => b.v[s.key] > 0);
+    segs.forEach((s, j) => {
+      const v = b.v[s.key], yTop = y(acc + v), yBot = y(acc); acc += v;
+      const h = Math.max(0, yBot - yTop - (j > 0 && yBot - yTop > 3 ? 2 : 0)); // 2px surface gap between stacked segments
+      if (h <= 0) return;
+      svg += j === segs.length - 1 ? `<path d="${roundedTop(x0, yTop, w, h, 4)}" fill="var(${s.c})"/>` : `<rect x="${x0}" y="${yTop}" width="${w}" height="${h}" fill="var(${s.c})"/>`;
+    });
+    if (i % labelEvery === 0) svg += `<text x="${P.l + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(bk.label(b.t))}</text>`;
+  });
+  svg += `<rect class="hl" id="tsHl" x="0" y="${P.t}" width="${bw}" height="${ih}" fill="var(--text-primary)" opacity="0" rx="4"/>`;
+  svg += `<rect id="tsHit" x="${P.l}" y="${P.t}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  el.innerHTML = svg;
+  const hit = $('#tsHit'), hl = $('#tsHl');
+  hit.onmousemove = e => {
+    const rect = hit.getBoundingClientRect(); const i = Math.min(buckets.length - 1, Math.max(0, Math.floor((e.clientX - rect.left) / bw)));
+    const b = buckets[i];
+    hl.setAttribute('x', P.l + i * bw); hl.setAttribute('opacity', .06);
+    const rows = series.filter(s => b.v[s.key]).slice().reverse().map(s => [s.label, fmtV(b.v[s.key]), `var(${s.c})`]);
+    showTip(e, bk.label(b.t), rows.length ? rows : [['No usage', '']], rows.length > 1 ? ['Total', fmtV(totals[i])] : null);
+  };
+  hit.onmouseleave = () => { hideTip(); hl.setAttribute('opacity', 0); };
+  $('#tsLegend').innerHTML = series.map(s => `<span><i style="background:var(${s.c})"></i>${esc(s.label)}</span>`).join('');
+}
+
+function modelsIn(recs) {
+  const m = new Map(); for (const r of recs) m.set(r.model, (m.get(r.model) || 0) + tot(r));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+
+function renderDonut(recs) {
+  const el = $('#donut');
+  const ms = modelsIn(recs);
+  if (!ms.length) { el.innerHTML = '<div class="empty">No usage in this range.</div>'; $('#donutLegend').innerHTML = ''; return; }
+  const vals = ms.map(m => recs.filter(r => r.model === m).reduce((a, r) => a + tot(r), 0));
+  const costs = ms.map(m => recs.filter(r => r.model === m).reduce((a, r) => a + r.cost, 0));
+  const total = vals.reduce((a, b) => a + b, 0) || 1;
+  const S = 200, R = 92, r0 = 64, cx = S / 2, cy = S / 2, pad = ms.length > 1 ? 0.012 : 0;
+  let a0 = -Math.PI / 2, svg = `<svg viewBox="0 0 ${S} ${S}" width="100%" style="max-width:200px;display:block;margin:0 auto" role="img" aria-label="Model share">`;
+  vals.forEach((v, i) => {
+    const frac = v / total, a1 = a0 + frac * Math.PI * 2;
+    const s0 = a0 + pad, s1 = Math.max(s0, a1 - pad);
+    const large = s1 - s0 > Math.PI ? 1 : 0;
+    const p = (a, rad) => `${(cx + rad * Math.cos(a)).toFixed(2)},${(cy + rad * Math.sin(a)).toFixed(2)}`;
+    const d = frac >= 0.9999 ? `M${cx - R},${cy}a${R},${R} 0 1,0 ${2 * R},0a${R},${R} 0 1,0 ${-2 * R},0M${cx - r0},${cy}a${r0},${r0} 0 1,1 ${2 * r0},0a${r0},${r0} 0 1,1 ${-2 * r0},0`
+      : `M${p(s0, R)}A${R},${R} 0 ${large} 1 ${p(s1, R)}L${p(s1, r0)}A${r0},${r0} 0 ${large} 0 ${p(s0, r0)}Z`;
+    svg += `<path class="seg" data-i="${i}" d="${d}" fill="var(${modelColor[ms[i]]})" fill-rule="evenodd" style="cursor:default"/>`;
+    a0 = a1;
+  });
+  svg += `<text x="${cx}" y="${cy + 2}" text-anchor="middle" style="font-size:24px;font-weight:650;fill:var(--text-primary)">${fmt(total)}</text><text x="${cx}" y="${cy + 20}" text-anchor="middle">tokens</text></svg>`;
+  el.innerHTML = svg;
+  el.querySelectorAll('.seg').forEach(s => { const i = +s.dataset.i;
+    s.onmousemove = e => showTip(e, shortModel(ms[i]), [['Tokens', fmt(vals[i])], ['Share', (vals[i] / total * 100).toFixed(1) + '%'], ['API $', usd(costs[i])]]);
+    s.onmouseleave = hideTip; });
+  $('#donutLegend').innerHTML = ms.map((m, i) => `<li><i class="sw" style="background:var(${modelColor[m]})"></i><span>${esc(shortModel(m))}</span><span class="m">${usd(costs[i])}</span><b class="tnum">${(vals[i] / total * 100).toFixed(0)}%</b></li>`).join('');
+}
+
+// ---------- tables ----------
+function sortable(id, rows, cols, defKey) {
+  const s = state.sort[id] || { k: defKey, d: -1 };
+  const col = cols.find(c => c.k === s.k) || cols[0];
+  rows.sort((a, b) => { const x = col.sv ? col.sv(a) : a[col.k], y = col.sv ? col.sv(b) : b[col.k]; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * s.d; });
+  return `<table><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''} ${c.cls || ''}" data-k="${c.k}" data-t="${id}" aria-sort="${s.k === c.k ? (s.d < 0 ? 'descending' : 'ascending') : 'none'}">${c.h}${s.k === c.k ? `<span class="arr"> ${s.d < 0 ? '↓' : '↑'}</span>` : ''}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${c.num ? 'num' : ''} ${c.td || ''} ${c.cls || ''}" ${c.title ? `title="${esc(c.title(r))}"` : ''}>${c.f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+function bindSort(sel) {
+  $$(sel + ' th').forEach(th => th.onclick = () => {
+    const id = th.dataset.t, k = th.dataset.k; const cur = state.sort[id];
+    state.sort[id] = { k, d: cur && cur.k === k ? -cur.d : -1 }; render();
+  });
+}
+function group(recs, keyFn) {
+  const g = new Map();
+  for (const r of recs) { const k = keyFn(r); const o = g.get(k) || { key: k, n: 0, in: 0, out: 0, cw: 0, cr: 0, tot: 0, cost: 0, bgTok: 0, sessions: new Set(), last: 0 };
+    if (!r.bg) o.n++; else o.bgTok += tot(r); o.in += r.in; o.out += r.out; o.cw += r.cw5 + r.cw1h; o.cr += r.cr; o.tot += tot(r); o.cost += r.cost; o.sessions.add(r.session); o.last = Math.max(o.last, r.t); g.set(k, o); }
+  return [...g.values()];
+}
+const dash = '<span class="muted">—</span>';
+function renderGroupTable(sel, recs, keyFn, nameFn, id) {
+  const rows = group(recs, keyFn);
+  if (!rows.length) { $(sel).innerHTML = '<div class="empty">No usage in this range.</div>'; return; }
+  const max = Math.max(...rows.map(r => r.tot)) || 1;
+  $(sel).innerHTML = sortable(id, rows, [
+    { k: 'key', h: id === 'model' ? 'Model' : 'Project', f: r => nameFn(r.key), td: 'name', title: r => r.key },
+    { k: 'tot', h: 'Tokens', num: true, f: r => `<span class="bar hide-sm"><i style="width:${Math.max(3, r.tot / max * 100)}%;background:var(${id === 'model' ? modelColor[r.key] : '--s1'})"></i></span>${fmt(r.tot)}` },
+    { k: 'out', h: 'Output', num: true, f: r => fmt(r.out), cls: 'hide-sm' },
+    { k: 'cost', h: 'API $', num: true, f: r => usd(r.cost) },
+    { k: 'bgTok', h: 'Background', num: true, f: r => r.bgTok ? fmt(r.bgTok) : dash, cls: 'hide-sm' },
+    { k: 'n', h: 'Calls', num: true, f: r => r.n },
+    { k: 'ses', h: 'Sessions', num: true, f: r => r.sessions.size, sv: r => r.sessions.size, cls: 'hide-sm' },
+  ], 'tot');
+  bindSort(sel);
+}
+
+function renderSessions(recs) {
+  const rows = group(recs, r => r.session).map(g => {
+    const all = recs.filter(r => r.session === g.key); const rr = all.some(r => !r.bg) ? all.filter(r => !r.bg) : all;
+    return { ...g, last: rr.at(-1).t, project: rr[0].project, first: rr[0].t, models: [...new Set(rr.map(r => r.model))], branch: rr.find(r => r.branch)?.branch || '', entry: rr[0].entry };
+  });
+  $('#sessCount').textContent = `${rows.length} in range`;
+  if (!rows.length) { $('#sessTable').innerHTML = '<div class="empty">No sessions in this range.</div>'; $('#sessMore').innerHTML = ''; return; }
+  const s = state.sort.sess || { k: 'tot', d: -1 };
+  const getv = (r, k) => k === 'last' ? r.last - r.first : k === 'models' ? r.models.join() : r[k];
+  rows.sort((a, b) => { const x = getv(a, s.k), y = getv(b, s.k); return (typeof x === 'string' ? x.localeCompare(y) : x - y) * s.d; });
+  const LIMIT = 10, shown = state.sessAll ? rows : rows.slice(0, LIMIT);
+  const via = e => ({ 'claude-desktop': 'Desktop', cli: 'CLI', 'claude-vscode': 'VS Code', background: 'Background' }[e] || e || '—');
+  $('#sessTable').innerHTML = sortable('sess', shown, [
+    { k: 'first', h: 'Started', f: r => new Date(r.first).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+    { k: 'project', h: 'Project', f: r => esc(r.project), td: 'name', title: r => r.key },
+    { k: 'branch', h: 'Branch', f: r => r.branch ? `<span class="chip">${esc(r.branch)}</span>` : dash, cls: 'hide-sm' },
+    { k: 'entry', h: 'Via', f: r => esc(via(r.entry)), cls: 'hide-sm' },
+    { k: 'models', h: 'Models', f: r => r.models.map(m => `<i class="sw" title="${esc(shortModel(m))}" style="background:var(${modelColor[m]});margin-right:3px"></i>`).join('') + `<span class="muted" style="margin-left:4px">${esc(r.models.map(shortModel).join(', '))}</span>`, cls: 'hide-sm' },
+    { k: 'tot', h: 'Tokens', num: true, f: r => fmt(r.tot) },
+    { k: 'cost', h: 'API $', num: true, f: r => usd(r.cost) },
+    { k: 'n', h: 'Calls', num: true, f: r => r.n, cls: 'hide-sm' },
+    { k: 'last', h: 'Duration', num: true, f: r => dur(r.last - r.first), sv: r => r.last - r.first, cls: 'hide-sm' },
+  ], 'tot');
+  bindSort('#sessTable');
+  $('#sessMore').innerHTML = rows.length > LIMIT ? `<button class="btn ghost" id="sessToggle">${state.sessAll ? 'Show fewer' : `Show all ${rows.length} sessions`}</button>` : '';
+  if ($('#sessToggle')) $('#sessToggle').onclick = () => { state.sessAll = !state.sessAll; renderSessions(filtered()); };
+}
+
+// ---------- activity ----------
+function renderHeat(recs) {
+  const el = $('#heat');
+  const grid = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  const tgrid = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  for (const r of recs) { if (r.bg) continue; const d = new Date(r.t); const wd = (d.getDay() + 6) % 7; grid[wd][d.getHours()]++; tgrid[wd][d.getHours()] += tot(r); }
+  const max = Math.max(1, ...grid.flat());
+  const W = Math.max(300, el.clientWidth || 500), L = 36, cw = (W - L) / 24, ch = Math.min(24, Math.max(14, cw)), H = ch * 7 + 22;
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let svg = `<svg width="${W}" height="${H}" role="img" aria-label="Activity heatmap">`;
+  grid.forEach((row, d) => {
+    svg += `<text x="0" y="${d * ch + ch / 2 + 4}">${DAYS[d]}</text>`;
+    row.forEach((v, h) => { const lvl = v ? Math.min(6, 1 + Math.floor(v / max * 5.999)) : 0;
+      svg += `<rect class="cell" data-d="${d}" data-h="${h}" x="${L + h * cw + 1.5}" y="${d * ch + 1.5}" width="${Math.max(2, cw - 3)}" height="${ch - 3}" rx="3" fill="var(--seq-${lvl})"/>`; });
+  });
+  for (let h = 0; h < 24; h += 3) svg += `<text x="${L + h * cw + cw / 2}" y="${H - 4}" text-anchor="middle">${String(h).padStart(2, '0')}:00</text>`;
+  el.innerHTML = svg + '</svg>';
+  el.querySelectorAll('.cell').forEach(c => { const d = +c.dataset.d, h = +c.dataset.h;
+    c.onmousemove = e => showTip(e, `${DAYS[d]} ${String(h).padStart(2, '0')}:00–${String(h + 1).padStart(2, '0')}:00`, [['API calls', grid[d][h]], ['Tokens', fmt(tgrid[d][h])]]);
+    c.onmouseleave = hideTip; });
+}
+
+function renderBlocks() {
+  const el = $('#blocksChart');
+  const { blocks, records, now } = state.data;
+  const bs = blocks.slice(-20).map(b => ({ ...b, tok: records.filter(r => r.t >= b.start && r.t < b.end).reduce((a, r) => a + tot(r), 0) }));
+  if (!bs.length) { el.innerHTML = '<div class="empty">No windows yet.</div>'; return; }
+  const max = niceMax(Math.max(...bs.map(b => b.tok), state.budget5h || 0));
+  const W = Math.max(300, el.clientWidth || 500), H = 200, P = { l: 52, r: 4, t: 10, b: 26 }, iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const bw = iw / Math.max(bs.length, 8), y = v => P.t + ih - v / max * ih, gap = Math.min(bw * 0.3, 12);
+  let svg = `<svg width="${W}" height="${H}" role="img" aria-label="5-hour windows">`;
+  const nt = tickCount(max);
+  for (let i = 0; i <= nt; i++) { const v = max * i / nt; svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(${i ? '--grid' : '--border'})"/><text x="${P.l - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`; }
+  bs.forEach((b, i) => { const x = P.l + i * bw + gap / 2, w = Math.max(2, bw - gap), yy = y(b.tok), h = P.t + ih - yy;
+    const isNow = now < b.end;
+    if (h > 0) svg += `<path d="${roundedTop(x, yy, w, h, 4)}" fill="var(${isNow ? '--s2' : '--s1'})"/>`;
+    svg += `<rect class="hit" data-i="${i}" x="${P.l + i * bw}" y="${P.t}" width="${bw}" height="${ih}" fill="transparent"/>`;
+    if (i === 0 || i === bs.length - 1 || bs.length <= 6) svg += `<text x="${P.l + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${isNow ? 'Now' : new Date(b.start).toLocaleDateString([], { month: 'short', day: 'numeric' })}</text>`; });
+  if (state.budget5h) svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(state.budget5h)}" y2="${y(state.budget5h)}" stroke="var(--crit)" stroke-dasharray="4 4"/><text x="${W - P.r}" y="${y(state.budget5h) - 5}" text-anchor="end" style="fill:var(--crit)">budget ${fmt(state.budget5h)}</text>`;
+  el.innerHTML = svg + `</svg><div class="legend"><span><i style="background:var(--s1)"></i>Past windows</span><span><i style="background:var(--s2)"></i>Current window</span></div>`;
+  el.querySelectorAll('.hit').forEach(h => { const b = bs[+h.dataset.i];
+    h.onmousemove = e => showTip(e, new Date(b.start).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' – ' + new Date(b.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      [['Tokens', fmt(b.tok)], ['API $', usd(b.cost)], ['Calls', b.msgs], ['Active for', dur(b.last - b.first)]]);
+    h.onmouseleave = hideTip; });
+}
+
+// ---------- data ----------
+async function load() {
+  $('#refreshBtn').querySelector('svg').style.transition = 'transform .6s'; $('#refreshBtn').querySelector('svg').style.transform = 'rotate(360deg)';
+  setTimeout(() => { const s = $('#refreshBtn svg'); s.style.transition = 'none'; s.style.transform = ''; }, 650);
+  try {
+    const res = await fetch('/api/data', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state.data = await res.json();
+    $('#banner').classList.remove('show');
+    $('#live').className = 'live';
+  } catch (e) {
+    $('#live').className = 'live err'; $('#updated').textContent = 'Offline';
+    $('#bannerText').innerHTML = `Can't reach the dashboard server. Is <code>claude-usage-board</code> still running in your terminal? ${state.data ? 'Showing the last data loaded.' : ''}`;
+    $('#banner').classList.add('show');
+    return;
+  }
+  const order = [...new Set(state.data.records.map(r => r.model))];
+  const saved = store.get('modelColors', {});
+  let next = Object.keys(saved).length;
+  for (const m of order) if (!saved[m]) saved[m] = `--s${(next++ % 8) + 1}`;
+  store.set('modelColors', saved); modelColor = saved;
+  fillSelect('#projSel', [...new Set(state.data.records.map(r => r.project))].sort(), state.project, 'All projects', x => x);
+  fillSelect('#modelSel', order.slice().sort(), state.model, 'All models', shortModel);
+  $('#updated').textContent = `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  render();
+}
+function fillSelect(sel, items, cur, allLabel, labelFn) {
+  $(sel).innerHTML = `<option value="">${allLabel}</option>` + items.map(i => `<option value="${esc(i)}" ${i === cur ? 'selected' : ''}>${esc(labelFn(i))}</option>`).join('');
+}
+async function fetchLive() {
+  $$('#liveBtn, #liveBtn2').forEach(b => { b.disabled = true; if (!b.classList.contains('icon')) b.textContent = 'Fetching…'; });
+  try { state.live = await (await fetch('/api/live-limits', { method: 'POST', headers: { 'x-claude-usage': '1' } })).json(); } catch (e) { state.live = { ok: false, error: e.message }; }
+  if (state.live.ok) store.set('liveEnabled', true);
+  renderLimits();
+}
+
+// ---------- wiring ----------
+$$('#presets button').forEach(b => b.onclick = () => { state.range = b.dataset.r; store.set('range', state.range); state.sessAll = false; render(); });
+function closePops(except) { $$('.pop').forEach(p => { if (p !== except) p.classList.remove('open'); }); }
+$$('.pop > .btn').forEach(b => b.onclick = e => { e.stopPropagation(); const p = b.parentElement; closePops(p); p.classList.toggle('open'); });
+$$('.pop-panel').forEach(p => p.onclick = e => e.stopPropagation());
+document.addEventListener('click', () => closePops());
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePops(); });
+const applyCustom = () => { const n = +$('#customN').value; if (n > 0) { state.range = n + $('#customU').value; store.set('range', state.range); closePops(); render(); } };
+$('#customGo').onclick = applyCustom;
+$('#customN').onkeydown = e => { if (e.key === 'Enter') applyCustom(); };
+$('#projSel').onchange = e => { state.project = e.target.value; render(); };
+$('#modelSel').onchange = e => { state.model = e.target.value; render(); };
+for (const [id, key] of [['#subToggle', 'sub'], ['#crToggle', 'cr'], ['#bgToggle', 'bg']]) {
+  $(id).checked = state[key];
+  $(id).onchange = e => { state[key] = e.target.checked; store.set(key, state[key]); render(); };
+}
+$$('#tsMode button').forEach(b => b.onclick = () => { state.tsMode = b.dataset.m; store.set('tsMode', state.tsMode); render(); });
+$('#refreshBtn').onclick = load;
+function isDark() { return (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark'; }
+function syncThemeIcon() { $('#themeBtn use').setAttribute('href', isDark() ? '#i-sun' : '#i-moon'); }
+$('#themeBtn').onclick = () => { const nt = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = nt; store.set('theme', nt); syncThemeIcon(); render(); };
+const th = store.get('theme', null); if (th) document.documentElement.dataset.theme = th;
+syncThemeIcon();
+addEventListener('scroll', () => $('#toolbar').classList.toggle('stuck', scrollY > 60), { passive: true });
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+setInterval(() => { if ($('#autoRefresh').checked) load(); }, 30000);
+setInterval(() => { if (state.data) { state.data.now = Date.now(); renderLimits(); } }, 60000);
+load().then(() => { if (store.get('liveEnabled', false)) fetchLive(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "claude-usage-board",
+  "version": "0.1.0",
+  "description": "Local dashboard and terminal report for your Claude Code token usage: totals, models, projects, sessions, 5-hour and weekly limits.",
+  "type": "module",
+  "bin": {
+    "claude-usage-board": "claude-usage.mjs"
+  },
+  "files": [
+    "claude-usage.mjs",
+    "dashboard.html",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "usage",
+    "tokens",
+    "dashboard",
+    "cli",
+    "cost"
+  ],
+  "author": "Vedant Bhamare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dark-Knight11/claude-usage-board.git"
+  },
+  "homepage": "https://github.com/Dark-Knight11/claude-usage-board#readme",
+  "bugs": {
+    "url": "https://github.com/Dark-Knight11/claude-usage-board/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}
