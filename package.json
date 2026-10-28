@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-board",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local dashboard and terminal report for your Claude Code token usage: totals, models, projects, sessions, 5-hour and weekly limits.",
   "type": "module",
   "bin": {

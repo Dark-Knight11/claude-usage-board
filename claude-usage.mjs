@@ -18,6 +18,12 @@ import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HOME = os.homedir();
+
+// Plain text when output is piped/redirected or NO_COLOR is set (also avoids stray codes in old consoles).
+if (!process.stdout.isTTY || process.env.NO_COLOR) {
+  const log = console.log;
+  console.log = (...a) => log(...a.map(x => typeof x === 'string' ? x.replace(/\x1b\[[0-9;]*m/g, '') : x));
+}
 const CLAUDE_DIRS = [
   process.env.CLAUDE_CONFIG_DIR && path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'),
   path.join(HOME, '.claude', 'projects'),
@@ -68,13 +74,16 @@ function walk(dir, out = []) {
   return out;
 }
 
-function projectName(cwd, dirName) {
-  if (cwd) {
-    if (cwd.includes('/scratch-workspaces/')) return '(scratch sessions)';
-    if (cwd === HOME) return '~';
-    return cwd.startsWith(HOME) ? '~' + cwd.slice(HOME.length) : cwd;
-  }
-  return dirName;
+// Shortens a session's cwd for display: home → "~", desktop-app temp folders → one bucket.
+// Windows paths use "\" and drive letters can differ in case (c:\ vs C:\), so compare loosely there.
+function projectName(cwd, dirName, home = HOME, win = process.platform === 'win32') {
+  if (!cwd) return dirName;
+  if (cwd.replace(/\\/g, '/').includes('/scratch-workspaces/')) return '(scratch sessions)';
+  const norm = s => win ? s.replace(/\//g, '\\').replace(/[\\/]+$/, '').toLowerCase() : s.replace(/\/+$/, '');
+  const c = norm(cwd), h = norm(home);
+  if (c === h) return '~';
+  const sep = win ? '\\' : '/';
+  return c.startsWith(h + sep) ? '~' + (win ? cwd.replace(/\//g, '\\') : cwd).slice(h.length) : cwd;
 }
 
 function parseFile(file, rootDir) {

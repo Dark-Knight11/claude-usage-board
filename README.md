@@ -32,6 +32,16 @@ Then run `claude-usage-board`. You can also run it once without installing: `npx
 
 It needs Node.js 18 or newer.
 
+### Windows, macOS and Linux
+
+It works the same on all three. On Windows, Claude Code keeps its logs in `C:\Users\<you>\.claude\projects`, and the tool finds them automatically.
+
+If you run Claude Code inside **WSL**, its logs live in your Linux home folder. In that case, run `npx claude-usage-board` inside WSL too. Or, from Windows, point the tool at those logs:
+
+```powershell
+$env:CLAUDE_CONFIG_DIR = "\\wsl$\Ubuntu\home\<you>\.claude"; npx claude-usage-board
+```
+
 ## Terminal report
 
 ```bash
@@ -58,6 +68,8 @@ claude-usage-board report --json
 | `--no-background` | leave out background usage (see below) |
 | `--live-limits` | also fetch your real plan limits |
 | `--json` | JSON output |
+
+Colour is turned off when the output is piped or redirected, or when `NO_COLOR` is set.
 
 Dashboard options: `--port <n>` (default 4321; if that port is busy it moves to the next free one) and `--no-open`.
 
