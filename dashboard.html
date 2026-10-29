@@ -256,7 +256,14 @@ details.about li { margin-bottom: 6px; }
       <div class="pop" id="customPop">
         <button class="btn" id="customBtn"><svg class="i"><use href="#i-cal"/></svg><span id="customLabel">Custom</span><svg class="i" style="width:12px"><use href="#i-chev"/></svg></button>
         <div class="pop-panel">
-          <h4>Last…</h4>
+          <h4>Date range</h4>
+          <div class="pop-row">
+            <input class="field" type="date" id="customFrom" aria-label="From date">
+            <span class="muted">–</span>
+            <input class="field" type="date" id="customTo" aria-label="To date">
+            <button class="btn primary" id="customDates">Apply</button>
+          </div>
+          <h4 style="margin-top:14px">Last…</h4>
           <div class="pop-row">
             <input class="field" type="number" id="customN" min="1" value="3" style="width:70px" aria-label="Amount">
             <select class="sel" id="customU" aria-label="Unit"><option value="h">hours</option><option value="d" selected>days</option><option value="w">weeks</option><option value="mo">months</option></select>
@@ -386,19 +393,36 @@ const state = {
 let modelColor = {};
 
 function tot(r) { return r.in + r.out + r.cw5 + r.cw1h + (state.cr ? r.cr : 0); }
+// Date ranges are stored as "YYYY-MM-DD..YYYY-MM-DD" (local days, both inclusive).
+const parseDay = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayStr = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function dateRange() {
+  const m = /^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/.exec(state.range);
+  if (!m) return null;
+  const to = parseDay(m[2]); to.setDate(to.getDate() + 1);
+  return [+parseDay(m[1]), +to];
+}
 function rangeLen() {
   if (state.range === 'all') return null;
+  const dr = dateRange(); if (dr) return dr[1] - dr[0];
   const m = /^(\d+(?:\.\d+)?)(h|d|w|mo)$/.exec(state.range);
   return parseFloat(m[1]) * UNIT[m[2]];
 }
-function rangeStart() { const l = rangeLen(); return l == null ? 0 : state.data.now - l; }
+function rangeStart() { const dr = dateRange(); if (dr) return dr[0]; const l = rangeLen(); return l == null ? 0 : state.data.now - l; }
+function rangeEnd() { const dr = dateRange(); return dr ? dr[1] : Infinity; }
 function rangeLabel() {
   if (state.range === 'all') return 'all time';
+  const dr = dateRange();
+  if (dr) {
+    const yr = new Date(dr[0]).getFullYear() !== new Date().getFullYear() || new Date(dr[1] - 1).getFullYear() !== new Date().getFullYear();
+    const d = t => new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric', year: yr ? 'numeric' : undefined });
+    return dr[1] - dr[0] <= 864e5 + 3600e3 ? d(dr[0]) : `${d(dr[0])} – ${d(dr[1] - 1)}`;
+  }
   const m = /^(\d+(?:\.\d+)?)(h|d|w|mo)$/.exec(state.range); const n = +m[1];
   return `last ${n === 1 ? '' : n + ' '}${UNIT_NAME[m[2]]}${n === 1 ? '' : 's'}`;
 }
 function matches(r) { return (!state.project || r.project === state.project) && (!state.model || r.model === state.model) && (state.sub || !r.sub) && (state.bg || !r.bg); }
-function filtered(t0 = rangeStart(), t1 = Infinity) { return state.data.records.filter(r => r.t >= t0 && r.t < t1 && matches(r)); }
+function filtered(t0 = rangeStart(), t1 = rangeEnd()) { return state.data.records.filter(r => r.t >= t0 && r.t < t1 && matches(r)); }
 function shortModel(m) { return m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-(\d+)$/, ' $1').replace(/^./, c => c.toUpperCase()); }
 function sum(recs) {
   return recs.reduce((a, r) => { a.in += r.in; a.out += r.out; a.cw += r.cw5 + r.cw1h; a.cr += r.cr; a.cost += r.cost; a.think += r.think; a.web += r.web; a.tot += tot(r); if (r.bg) a.bg += tot(r); else a.calls++; return a; },
@@ -446,12 +470,12 @@ function render() {
 function renderCaption(recs) {
   const t0 = Math.max(rangeStart(), state.data.records[0]?.t || 0);
   const d = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: rangeLen() && rangeLen() <= 2 * 864e5 ? '2-digit' : undefined, minute: rangeLen() && rangeLen() <= 2 * 864e5 ? '2-digit' : undefined });
-  const parts = [`${d(t0)} – now`, `${new Set(recs.map(r => r.session)).size} sessions`];
+  const parts = [dateRange() ? null : `${d(t0)} – now`, `${new Set(recs.map(r => r.session)).size} sessions`];
   if (state.project) parts.push(esc(state.project));
   if (state.model) parts.push(esc(shortModel(state.model)));
   const ex = [!state.sub && 'subagents', !state.cr && 'cache reads', !state.bg && 'background'].filter(Boolean);
   if (ex.length) parts.push('excluding ' + ex.join(', '));
-  $('#caption').innerHTML = `Showing <b style="color:var(--text-secondary);font-weight:600">${rangeLabel()}</b> · ` + parts.join(' · ');
+  $('#caption').innerHTML = `Showing <b style="color:var(--text-secondary);font-weight:600">${rangeLabel()}</b> · ` + parts.filter(Boolean).join(' · ');
 }
 
 function delta(cur, prev) {
@@ -459,8 +483,9 @@ function delta(cur, prev) {
   if (!prev) return cur ? `<span class="delta up" title="Nothing in the previous period">new</span>` : '';
   const d = (cur - prev) / prev;
   if (Math.abs(d) < 0.005) return `<span class="delta" title="vs previous period">±0%</span>`;
-  return `<span class="delta ${d > 0 ? 'up' : 'down'}" title="vs previous ${rangeLabel().replace('last ', '')}">${d > 0 ? '↑' : '↓'} ${Math.abs(d * 100) >= 1000 ? '>999' : Math.abs(d * 100).toFixed(0)}%</span>`;
+  return `<span class="delta ${d > 0 ? 'up' : 'down'}" title="vs previous ${prevLabel()}">${d > 0 ? '↑' : '↓'} ${Math.abs(d * 100) >= 1000 ? '>999' : Math.abs(d * 100).toFixed(0)}%</span>`;
 }
+function prevLabel() { return dateRange() ? `${Math.round(rangeLen() / 864e5)} days` : rangeLabel().replace('last ', ''); }
 function kpi(label, value, sub, dl) {
   return `<div class="card kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub || '&nbsp;'} ${dl || ''}</div></div>`;
 }
@@ -473,8 +498,8 @@ function renderKpis(recs) {
   const sessions = new Set(recs.map(r => r.session)).size;
   const prevSessions = hasPrev ? new Set(filtered(rangeStart() - len, rangeStart()).map(r => r.session)).size : null;
   const hit = (s.in + s.cw + s.cr) ? s.cr / (s.in + s.cw + s.cr) : 0;
-  const span = recs.length ? Math.max(1, (state.data.now - Math.max(rangeStart(), recs[0].t)) / 864e5) : 1;
-  $('#ovHint').textContent = state.range === 'all' ? '' : 'changes vs the previous ' + rangeLabel().replace('last ', '');
+  const span = recs.length ? Math.max(1, (Math.min(state.data.now, rangeEnd()) - Math.max(rangeStart(), recs[0].t)) / 864e5) : 1;
+  $('#ovHint').textContent = state.range === 'all' ? '' : 'changes vs the previous ' + prevLabel();
   const hero = `<div class="card hero kpi">
       <div class="label">Total tokens</div>
       <div class="big" style="margin-top:6px">${fmt(s.tot)}</div>
@@ -502,7 +527,7 @@ function renderSpark(recs) {
   const pts = totals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   el.innerHTML = `<svg width="${W}" height="${H}" aria-hidden="true"><defs><linearGradient id="sg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".25"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
     <polygon points="0,${H} ${pts} ${W},${H}" fill="url(#sg)"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/></svg>
-    <div class="row muted" style="font-size:11px"><span>${esc(bk.label(buckets[0].t))}</span><span>per ${bk.name}</span><span>now</span></div>`;
+    <div class="row muted" style="font-size:11px"><span>${esc(bk.label(buckets[0].t))}</span><span>per ${bk.name}</span><span>${rangeEnd() > state.data.now ? 'now' : esc(bk.label(buckets[buckets.length - 1].t))}</span></div>`;
 }
 
 function meterColor(p) { return p >= 0.9 ? 'var(--crit)' : p >= 0.7 ? 'var(--warn)' : 'var(--s1)'; }
@@ -593,7 +618,7 @@ function floorTo(t, ms) {
 }
 // Chart domain: the selected range, but never before the first record in the logs (there is no data before it).
 function domain() {
-  const t1 = state.data.now;
+  const t1 = Math.min(state.data.now, rangeEnd() - 1);
   const first = state.data.records[0]?.t ?? t1;
   return [Math.max(rangeStart(), floorTo(first, 3600e3)), t1];
 }
@@ -850,6 +875,23 @@ document.addEventListener('click', () => closePops());
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePops(); });
 const applyCustom = () => { const n = +$('#customN').value; if (n > 0) { state.range = n + $('#customU').value; store.set('range', state.range); closePops(); render(); } };
 $('#customGo').onclick = applyCustom;
+const applyDates = () => {
+  let [a, b] = [$('#customFrom').value, $('#customTo').value];
+  if (!a || !b) return;
+  if (a > b) [a, b] = [b, a];
+  state.range = `${a}..${b}`; store.set('range', state.range); state.sessAll = false; closePops(); render();
+};
+$('#customDates').onclick = applyDates;
+$$('#customFrom, #customTo').forEach(i => i.onkeydown = e => { if (e.key === 'Enter') applyDates(); });
+// Prefill the date pickers from the current range each time the popover opens.
+$('#customBtn').addEventListener('click', () => {
+  if (!state.data) return;
+  const today = dayStr(Date.now());
+  const dr = dateRange();
+  $('#customFrom').value = dayStr(dr ? dr[0] : Math.max(rangeStart(), state.data.records[0]?.t || 0));
+  $('#customTo').value = dr ? dayStr(dr[1] - 1) : today;
+  $$('#customFrom, #customTo').forEach(i => i.max = today);
+});
 $('#customN').onkeydown = e => { if (e.key === 'Enter') applyCustom(); };
 $('#projSel').onchange = e => { state.project = e.target.value; render(); };
 $('#modelSel').onchange = e => { state.model = e.target.value; render(); };
