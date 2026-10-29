@@ -10,7 +10,7 @@ The command opens a dashboard at `http://localhost:4321`.
 
 ## What it shows
 
-- **Totals for any time range:** 1h, 5h, 24h, 7d, 30d, 90d, all time, or a custom "last N hours/days/weeks/months". Each number is compared with the previous period of the same length.
+- **Totals for any time range:** 1h, 5h, 24h, 7d, 30d, 90d, all time, a custom from/to date range, or a custom "last N hours/days/weeks/months". Each number is compared with the previous period of the same length.
 - **Token types:** input, output (including thinking), cache writes and cache reads, plus the cache hit rate.
 - **By model and by project.** Each session counts under the project it was started in, subagents included.
 - **Sessions,** with branch, where it ran (CLI, desktop app, VS Code), models, tokens, cost and duration.
